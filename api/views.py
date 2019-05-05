@@ -18,8 +18,8 @@ from random import choice
 from time import sleep
 
 
-PATH="/home/kays/pim/seizure-detection/seizure-data/Patient_8/test/"
-PATH_training="/home/kays/pim/seizure-detection/seizure-data/Patient_8/training/"
+PATH="/home/admin/PIM/data/test/"
+PATH_training="/home/admin/PIM/data/train/"
 
 def mat_to_dataframe(path):
     mat = loadmat(path)['data']
@@ -38,6 +38,62 @@ config = {
 
 firebase = pyrebase.initialize_app(config)
 database=firebase.database()
+
+
+def handler(msg) : 
+	data = msg["data"]
+	if(data is not None ) : 
+		print("ictal")
+		files = listdir(PATH_training)
+		ictal = list(filter(lambda file : "_ictal" in file ,files)) 
+		flag = True
+		file = PATH_training+choice(ictal)
+		df=getData(file,predict=False)
+		notif_ref = database.child("eeg/data")
+		data = df.transpose().to_dict()
+		data["interictal"]=0
+		new_notif = notif_ref.push(data)
+		print("Sent")
+		database.child("eeg/ictal").remove()
+
+
+stream_ = database.child("eeg/ictal").stream(handler)
+
+def handler2(msg) : 
+	data = msg["data"]
+	if(data is not None ) : 
+		print("ictal")
+		files = listdir(PATH_training)
+		ictal = list(filter(lambda file : "interictal" in file ,files)) 
+		flag = True
+		file = PATH_training+choice(ictal)
+		df=getData(file,predict=False)
+		notif_ref = database.child("eeg/data")
+		data = df.transpose().to_dict()
+		data["interictal"]=1
+		new_notif = notif_ref.push(data)
+		print("Sent")
+		database.child("eeg/interictal").remove()
+
+
+stream_2 = database.child("eeg/interictal").stream(handler2)
+
+def handler3(msg) : 
+	data = msg["data"]
+	if(data is not None ) : 
+		files = listdir(PATH)
+		file = PATH+choice(files)
+		df,prediction=getData(file)
+		notif_ref = database.child("eeg/data")
+		data = df.transpose().to_dict()
+		data["interictal"]=prediction
+		new_notif = notif_ref.push(data)
+		print("Sent")
+		database.child("eeg/test").remove()
+stream_3 = database.child("eeg/test").stream(handler3)
+
+
+
 loaded_model = pickle.load(open('xgb_model.dat', 'rb'))
 
 def getData(file,predict=True) : 
