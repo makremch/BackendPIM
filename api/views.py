@@ -59,16 +59,12 @@ def home(request):
 	files = listdir(PATH)
 	flag = True
 	file = PATH+choice(files)
-	while(flag) :
-		df,prediction=getData(file)
-		notif_ref = database.child("eeg/data")
-		data = df.transpose().to_dict()
-		data["interictal"]=prediction
-		new_notif = notif_ref.push(data)
-		print("Sent")
-		flag= database.child("eeg/stop").get().val()==None
-	database.child("eeg/stop").remove()
-	database.child("eeg/data").remove()
+	df,prediction=getData(file)
+	notif_ref = database.child("eeg/data")
+	data = df.transpose().to_dict()
+	data["interictal"]=prediction
+	new_notif = notif_ref.push(data)
+	print("Sent")
 	return HttpResponse("Updated")
 
 @csrf_exempt
@@ -78,16 +74,12 @@ def ictal(request):
 	ictal = list(filter(lambda file : "_ictal" in file ,files)) 
 	flag = True
 	file = PATH_training+choice(ictal)
-	while(flag) :
-		df=getData(file,predict=False)
-		notif_ref = database.child("eeg/data")
-		data = df.transpose().to_dict()
-		data["interictal"]=0
-		new_notif = notif_ref.push(data)
-		print("Sent")
-		flag= database.child("eeg/stop").get().val()==None
-	database.child("eeg/stop").remove()
-	database.child("eeg/data").remove()
+	df=getData(file,predict=False)
+	notif_ref = database.child("eeg/data")
+	data = df.transpose().to_dict()
+	data["interictal"]=0
+	new_notif = notif_ref.push(data)
+	print("Sent")
 	return HttpResponse("Updated")
 
 
@@ -97,20 +89,14 @@ def interictal(request):
 	files = listdir(PATH_training)
 	interictal = list(filter(lambda file : "interictal" in file ,files)) 
 	file = PATH_training+choice(interictal)
-	flag = True
-	while(flag) :
-		df=getData(file,predict=False)
-		notif_ref = database.child("eeg/data")
-		data = df.transpose().to_dict()
-		data["interictal"]=1
-		new_notif = notif_ref.push(data)
-		print("Sent")
-		flag= database.child("eeg/stop").get().val()==None
-	database.child("eeg/stop").remove()
-	database.child("eeg/data").remove()
+	df=getData(file,predict=False)
+	notif_ref = database.child("eeg/data")
+	data = df.transpose().to_dict()
+	data["interictal"]=1
+	new_notif = notif_ref.push(data)
+	print("Sent")
 	return HttpResponse("Updated")
 
 def stop(request) : 
-	notif_ref = database.child("eeg/stop")
-	new_notif = notif_ref.push("1")
-	return HttpResponse("Stopped")
+	database.child("eeg/data").remove()
+	return HttpResponse("Cleared")
